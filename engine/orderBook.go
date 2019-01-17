@@ -36,7 +36,7 @@ func (book *OrderBook) addSellOrder(order Order) {
 		return
 	}
 	var counter int
-	for counter := len - 1; counter >= 0; counter-- {
+	for counter = len - 1; counter >= 0; counter-- {
 		sellOrder := book.SellOrders[counter]
 		if sellOrder.Price > order.Price {
 			break

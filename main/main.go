@@ -16,7 +16,8 @@ func PrintCurrentBuySellOrders() {
 	lb := len(book.BuyOrders)
 
 	fmt.Printf("BUY ORDERS LIST (%d)\n", lb)
-	fmt.Println("_______________")
+	fmt.Println("________________________________________________________")
+	fmt.Printf(" ID                               \tPrice\tAmount\tTime\n")
 
 	for i := 0; i < lb; i++ {
 		order := book.BuyOrders[i]
@@ -25,7 +26,8 @@ func PrintCurrentBuySellOrders() {
 	ls := len(book.SellOrders)
 
 	fmt.Printf("SELL ORDERS LIST (%d)\n", ls)
-	fmt.Println("_______________")
+	fmt.Println("________________________________________________________")
+	fmt.Printf(" ID                               \tPrice\tAmount\tTime\n")
 
 	for i := 0; i < ls; i++ {
 		order := book.SellOrders[i]
