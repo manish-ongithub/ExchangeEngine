@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	"../engine"
@@ -35,13 +36,44 @@ func PrintCurrentBuySellOrders() {
 	}
 }
 
+//StartWebServer : this function starts the webserver
+func StartWebServer() {
+	fmt.Println("starting httpserver on port 8000")
+	http.HandleFunc("/orderlist", func(w http.ResponseWriter, r *http.Request) {
+
+		ls := len(book.SellOrders)
+		s := fmt.Sprintf("SELL ORDERS LIST (%d)\n", ls)
+		w.Write([]byte(s))
+		w.Write([]byte(" ID                               \tPrice\tAmount\tTime\n"))
+
+		for i := 0; i < ls; i++ {
+			order := book.SellOrders[i]
+			str := fmt.Sprintf("%s\t%d\t%d\t%d\n", order.ID, order.Price, order.Amount, order.Ctime)
+			w.Write([]byte(str))
+		}
+
+		lb := len(book.BuyOrders)
+		w.Write([]byte("\n\n"))
+		s = fmt.Sprintf("BUY ORDERS LIST (%d)\n", lb)
+		w.Write([]byte(s))
+		w.Write([]byte(" ID                               \tPrice\tAmount\tTime\n"))
+
+		for i := 0; i < lb; i++ {
+			order := book.BuyOrders[i]
+			s = fmt.Sprintf("%s\t%d\t%d\t%d\n", order.ID, order.Price, order.Amount, order.Ctime)
+			w.Write([]byte(s))
+		}
+
+	})
+	http.ListenAndServe(":8000", nil)
+}
 func main() {
 	// create the order book
 	book = engine.OrderBook{
 		BuyOrders:  make([]engine.Order, 0, 100),
 		SellOrders: make([]engine.Order, 0, 100),
 	}
-
+	go StartWebServer()
 Start:
 
 	done := make(chan bool)
