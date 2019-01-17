@@ -11,6 +11,27 @@ import (
 
 var book engine.OrderBook
 
+//PrintCurrentBuySellOrders : prints list of current orders in queue
+func PrintCurrentBuySellOrders() {
+	lb := len(book.BuyOrders)
+
+	fmt.Printf("BUY ORDERS LIST (%d)\n", lb)
+	fmt.Println("_______________")
+
+	for i := 0; i < lb; i++ {
+		order := book.BuyOrders[i]
+		fmt.Printf("%s\t%d\t%d\t%d\n", order.ID, order.Price, order.Amount, order.Ctime)
+	}
+	ls := len(book.SellOrders)
+
+	fmt.Printf("SELL ORDERS LIST (%d)\n", ls)
+	fmt.Println("_______________")
+
+	for i := 0; i < ls; i++ {
+		order := book.SellOrders[i]
+		fmt.Printf("%s\t%d\t%d\t%d\n", order.ID, order.Price, order.Amount, order.Ctime)
+	}
+}
 
 func main() {
 	// create the order book
@@ -20,17 +41,12 @@ func main() {
 	}
 
 Start:
-	/*
-		fmt.Print("Enter text: ")
-		var input string
-		fmt.Scanln(&input)
-		cmdHandler(input)
-	*/
+
 	done := make(chan bool)
-	fmt.Println("create the consumer and listen for new order messages")
+	tradechannel := make(chan bool)
 
 	go func() {
-		fmt.Println("reader routine called")
+		fmt.Println("Starting orders topic consumer ")
 		r := kafka.NewReader(kafka.ReaderConfig{
 			Brokers:        []string{"192.168.0.52:9092"},
 			GroupID:        "consumer-group-id",
@@ -64,6 +80,7 @@ Start:
 			fmt.Println(order)
 			// process the order
 			trades := book.Process(order)
+			PrintCurrentBuySellOrders()
 			for _, trade := range trades {
 				rawTrade := trade.ToJSON()
 				fmt.Print(" trade => ")
@@ -84,14 +101,42 @@ Start:
 			}
 
 		}
-
 		fmt.Println("closing reader")
 		r.Close()
 		done <- true
 	}()
+	go func() {
+		fmt.Println("Starting trades topic consumer ")
+		r := kafka.NewReader(kafka.ReaderConfig{
+			Brokers:        []string{"192.168.0.52:9092"},
+			GroupID:        "trade-consumer-group-id",
+			Topic:          "trades",
+			Partition:      0,
+			MinBytes:       10e3,        // 10KB
+			MaxBytes:       10e6,        // 10MB
+			CommitInterval: time.Second, // flushes commits to Kafka every second
+		})
+		for {
+			fmt.Println("calling trades r.ReadMessage")
+			ctx := context.Background()
+			msg, err := r.ReadMessage(ctx)
+			//msg, err := r.FetchMessage(ctx)
+			if err != nil {
+				fmt.Println(err)
+				break
+			}
+			var trade engine.Trade
+			trade.FromJSON(msg.Value)
+			fmt.Print("trade reader ->")
+			fmt.Println(trade)
+
+		}
+		tradechannel <- true
+	}()
 
 	// wait until we are done
 	<-done
+	<-tradechannel
 	fmt.Println("going to start label")
 	goto Start
 
