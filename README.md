@@ -7,3 +7,6 @@ ExchangeEngine/main/main.go is the main server which reads and processes oders a
 ExchangeEngince/client/main.go can be used to test and puch orders to the server.
 
 Both client and server use Kafka for reading and writing messages.
+
+
+RIGHT NOW EVERYTHING IS IN RAW FORM. Will be updated shortly.
