@@ -11,6 +11,7 @@ import (
 )
 
 var book engine.OrderBook
+var tradelist []engine.Trade
 
 //PrintCurrentBuySellOrders : prints list of current orders in queue
 func PrintCurrentBuySellOrders() {
@@ -63,6 +64,18 @@ func StartWebServer() {
 			s = fmt.Sprintf("%s\t%d\t%d\t%d\n", order.ID, order.Price, order.Amount, order.Ctime)
 			w.Write([]byte(s))
 		}
+		lt := len(tradelist)
+		w.Write([]byte("\n\n"))
+		s = fmt.Sprintf("TRADE LIST (%d)\n", lb)
+		w.Write([]byte(s))
+		w.Write([]byte(" Taker ID                               \t Maker ID                               \t"))
+		w.Write([]byte("Price\tAmount\tTime\n"))
+
+		for i := 0; i < lt; i++ {
+			t := tradelist[i]
+			s = fmt.Sprintf("%s\t%s\t%d\t%d\n", t.TakerOrderID, t.MakerOrderID, t.Amount, t.Price)
+			w.Write([]byte(s))
+		}
 
 	})
 	http.ListenAndServe(":8000", nil)
@@ -73,6 +86,7 @@ func main() {
 		BuyOrders:  make([]engine.Order, 0, 100),
 		SellOrders: make([]engine.Order, 0, 100),
 	}
+	tradelist = make([]engine.Trade, 0, 200)
 	go StartWebServer()
 Start:
 
@@ -116,6 +130,7 @@ Start:
 			trades := book.Process(order)
 			PrintCurrentBuySellOrders()
 			for _, trade := range trades {
+				tradelist = append(tradelist, trade)
 				rawTrade := trade.ToJSON()
 				fmt.Print(" trade => ")
 				fmt.Println(trade)
